@@ -4,7 +4,50 @@ from openpyxl import Workbook, load_workbook
 import tkinter as tk
 from tkinter import filedialog
 import datetime
-import open
+# import open
+
+
+import ctypes
+import time
+# MessageBox types
+MB_OK = 0x0  # OK button
+MB_OKCANCEL = 0x1  # OK and Cancel buttons
+MB_YESNO = 0x4  # Yes and No buttons
+MB_ICONINFORMATION = 0x40  # Information icon
+MB_ICONWARNING = 0x30  # Warning icon
+MB_ICONERROR = 0x10  # Error icon
+
+# Function to display message box
+def show_loading_alert(message):
+    ctypes.windll.user32.MessageBoxW(0, message, "Loading", MB_OK )
+
+# Function to display message box
+def Finish_alert(message):
+    ctypes.windll.user32.MessageBoxW(0, f"Successfully data stored in {message}", "Finished", MB_OK )
+
+
+
+
+
+
+
+
+# Function to display message box
+def show_message_box(title, message, style):
+    return ctypes.windll.user32.MessageBoxW(0, message, title, style)
+
+def show():
+    result = show_message_box("Alert", "would you want to execute this file?", MB_OK | MB_ICONINFORMATION |MB_YESNO)
+    if result == 7:  # 7 corresponds to No button
+        show_loading_alert('Do you want to close?')
+        exit()
+        
+def load():
+    # Simulate some loading process
+    show_loading_alert("Loading, please wait...")
+    time.sleep(1)  # Simulating loading process
+    
+
 
 # Create a new workbook
 wb = Workbook()
@@ -12,17 +55,17 @@ wb = Workbook()
 # Create a new worksheet within the workbook
 ws = wb.active
 
-def converter(data_list, reg):
+def converter(data_list, reg,name):
     global first_table
-    subject_grades = {'reg': reg}
-   
+    subject_grades = {'Name':name,'Reg No': reg}
+    
     # Iterate over the list, skipping the first row (headers)
     for i in range(7, len(data_list), 7):
         subject_no = data_list[i + 1]
         grade = data_list[i + 6]
         subject_grades[subject_no] = grade
-
-    print(subject_grades)
+    
+    print(subject_grades.values())
    
     if first_table:
         ws.append(list(subject_grades.keys()))
@@ -42,15 +85,29 @@ def extract_data(html_content, reg):
     table = soup.find_all('table')
     
     if len(table) > 2:
+        name_table=table[0]
         mark_table = table[2]
         mark_data = []
+        name_list=[]
         rows = mark_table.find_all('td')
+        name_row=name_table.find_all('td')
         
+        for detail in name_row:
+            name_detail=detail.get_text(strip=True)
+            name_list.append(name_detail)
+
         for cell in rows:
             cell_text = cell.get_text(strip=True)
             mark_data.append(cell_text)
         
-        return converter(mark_data, reg)
+        for item in name_list:
+            # Check if the item starts with "Name of the Student :"
+            if item.startswith('Name of the Student :'):
+                # Extract the name
+                name = item.split(':')[-1].strip()
+                print(name)
+                break  
+        return converter(mark_data, reg,name)
     else:
         raise Exception("Mark table not found in HTML content.")
 
@@ -66,7 +123,7 @@ headers = {
 
 
 ###create a Alert to run this program
-open.show()
+show()
 
 
 
@@ -120,7 +177,7 @@ first_table = True
 error_reg_numbers = []
 
 ##loading alert
-open.load()
+load()
 
 # Main function to process requests for registration numbers
 for reg_no in register_list:
@@ -197,4 +254,4 @@ for reg_no in error_reg_numbers:
 # Save the workbook
 filename=f"example_sorted_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.xlsx"
 wb.save(filename)
-open.Finish_alert(filename)
+Finish_alert(filename)
